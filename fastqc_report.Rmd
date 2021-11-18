@@ -1,0 +1,380 @@
+---
+title: "Fastqc Report"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+toc_depth: 4
+number_sections: true
+theme: lumen
+params:
+  read1_before_dir: ""
+  read1_after_dir: ""
+  read2_before_dir: ""
+  read2_after_dir: ""
+  cutadapt_cmd: ""
+---
+
+```{r include=FALSE}
+library(tidyverse)
+library(scales)
+library(plotly)
+
+plot_quality <- function(d){
+    d %>% plot_ly(type="box", 
+                  q1=~`Lower Quartile`, 
+                  median=~Median,
+                  q3=~`Upper Quartile`, 
+                  lowerfence=~`10th Percentile`, 
+                  upperfence=~`90th Percentile`, 
+                  line = list(color="#6060B0"), name="") %>% 
+        add_lines(x=~Base, y=~Mean, line=list(color="#6E6E3C"), name="") %>% 
+        layout(yaxis = list(range = c(0, 40), title="Quality"), showlegend = FALSE)
+}
+
+plot_nt_distribution <- function(d){
+    d <- d %>% pivot_longer(-Base, names_to = "nt", values_to = "percent")
+    p <- ggplot(d, aes(Base, percent, color=nt))+
+        geom_line(alpha=0.8) + ylim(0,100) + theme_bw()+ 
+        theme(
+            axis.text.x = element_text(face = "bold", color = "black"), 
+            panel.grid = element_blank(),
+            legend.title = element_blank(),
+            legend.position = "top"
+        ) + scale_color_brewer(palette = "Set1")
+    ggplotly(p) %>% layout(legend = list(x=0.9, y=0.95, title = ""))
+}
+
+plot_length <- function(d){
+    p <- ggplot(d, aes(Length, Count))+
+        geom_line(alpha=0.8) + theme_bw()+
+        theme(
+            axis.text.x = element_text(face = "bold", color = "black"),
+            panel.grid = element_blank(),
+            legend.title = element_blank(),
+            legend.position = "top"
+        ) + scale_color_brewer(palette = "Set1")
+    ggplotly(p)
+}
+
+plot_duplication <- function(d){
+    d <- d %>%
+        pivot_longer(-`Duplication Level`, names_to = "group", values_to = "percent") ##%>%
+        ##mutate(text=paste0("Duplication Level: ", `Duplication Level`, "<br>", "Percent: ", label_percent(0.01)(percent/100)))
+    p <- ggplot(d, aes(`Duplication Level`, 
+                       percent, 
+                       group=group, 
+                       color=group))+ 
+                       ##text=text))+
+        geom_line(alpha=0.8) + ylim(0,100) + theme_bw()+
+        theme(
+            axis.text.x = element_text(face = "bold", color = "black"),
+            panel.grid = element_blank(),
+            legend.title = element_blank(),
+            legend.position = "top"
+        ) + scale_color_brewer(palette = "Set1")
+    ggplotly(p) %>% layout(legend = list(x=0.75, y=0.95, title = ""))
+}
+
+plot_adapter_content <- function(d){
+    d <- d %>% pivot_longer(-Position, names_to = "Adapter", values_to = "percent")
+    p <- ggplot(d, aes(Position, percent, color=Adapter))+
+        geom_line(alpha=0.8) + ylim(0,100) + 
+        theme_bw()+
+        theme(
+            axis.text.x = element_text(face = "bold", color = "black"),
+            panel.grid = element_blank(),
+            legend.title = element_blank(),
+            legend.position = "top"
+        ) + scale_color_brewer(palette = "Set1")
+    ggplotly(p) %>% layout(legend = list(x=0.7, y=0.95, title=""))
+}
+```
+
+## Tools Info
+
+<details>
+  <summary>FastQC Version</summary>
+  
+  ```{bash, echo=FALSE}
+  fastqc --version
+  ```
+
+</details> 
+
+<details>
+  <summary>Cutadapt Version</summary>
+  
+  ```{bash, echo=FALSE}
+  cutadapt --version
+  ```
+  
+</details>
+
+<details>
+  <summary>Cutadapt Version</summary>
+ 
+ ```{r comment='', echo=FALSE}
+ cat(readLines(params$cutadapt_cmd), sep = '\n')
+ ```
+
+</details>
+
+## Statistics
+
+```{r echo=FALSE, message = FALSE, warning = FALSE}
+read1_before_stats <- read_tsv(file.path(params$read1_before_dir, "Basic_Statistics"))
+read1_after_stats <- read_tsv(file.path(params$read1_after_dir, "Basic_Statistics"))
+read2_before_stats <- read_tsv(file.path(params$read2_before_dir, "Basic_Statistics"))
+read2_after_stats <- read_tsv(file.path(params$read2_after_dir, "Basic_Statistics"))
+read1_stats <- full_join(read1_before_stats, read1_after_stats, by="Measure") %>% dplyr::rename(read1_before=Value.x, read1_after=Value.y)
+read2_stats <- full_join(read2_before_stats, read2_after_stats, by="Measure") %>% dplyr::rename(read2_before=Value.x, read2_after=Value.y)
+stats <- full_join(read1_stats, read2_stats, by="Measure")
+knitr::kable(stats)
+```
+
+## Read1 Result
+
+### Before Trimming
+
+#### Quality
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read1_before_quality <- read_tsv(file.path(params$read1_before_dir, "Per_base_sequence_quality"))
+plot_quality(read1_before_quality)
+```
+
+#### Nucleotides Dirstribution
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read1_before_nt <- read_tsv(file.path(params$read1_before_dir, "Per_base_sequence_content"))
+plot_nt_distribution(read1_before_nt)
+```
+
+#### Sequence Length Distribution
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read1_before_length <- read_tsv(file.path(params$read1_before_dir, "Sequence_Length_Distribution"))
+plot_length(read1_before_length)
+```
+
+#### Sequence Duplication Levels
+
+```{r echo=FALSE, message = FALSE, warning = FALSE}
+read1_before_duplicationTotal <- read_tsv(file.path(params$read1_before_dir, "Sequence_Duplication_Levels"), 
+                                          n_max=1,
+                                          col_names = c("term", "value")) %>% pull(value)
+```
+Percent of seqs remaining if deduplicated: <strong>`r label_percent(0.01)(read1_before_duplicationTotal/100)`</strong>
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read1_before_duplication <- read_tsv(file.path(params$read1_before_dir, "Sequence_Duplication_Levels"), skip=1) %>%
+    mutate(`Duplication Level` = factor(`Duplication Level`, levels = `Duplication Level`))
+plot_duplication(read1_before_duplication)
+```
+
+#### Overrepresented sequences
+
+```{r include=FALSE, message = FALSE, warning = FALSE}
+read1_before_overrepresentedTest <- file.exists(file.path(params$read1_before_dir, "Overrepresented_sequences"))
+```
+
+```{r echo=FALSE, eval=read1_before_overrepresentedTest, message = FALSE, warning = FALSE}
+read1_before_overrepresentedSeq <- read_tsv(file.path(params$read1_before_dir, "Overrepresented_sequences"))
+knitr::kable(read1_before_overrepresentedSeq)
+```
+
+```{block echo=!read1_before_overrepresentedTest}
+No overrepresented sequences
+```
+
+#### Adapter Cotent
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read1_before_adapter <- read_tsv(file.path(params$read1_before_dir, "Adapter_Content"))
+plot_adapter_content(read1_before_adapter)
+```
+
+### After Trimming
+
+#### Quality
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read1_after_quality <- read_tsv(file.path(params$read1_after_dir, "Per_base_sequence_quality"))
+plot_quality(read1_after_quality)
+```
+
+#### Nucleotides Dirstribution
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read1_after_nt <- read_tsv(file.path(params$read1_after_dir, "Per_base_sequence_content"))
+plot_nt_distribution(read1_after_nt)
+```
+
+#### Sequence Length Distribution
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read1_after_length <- read_tsv(file.path(params$read1_after_dir, "Sequence_Length_Distribution"))
+plot_length(read1_after_length)
+```
+
+#### Sequence Duplication Levels
+
+```{r echo=FALSE, message = FALSE, warning = FALSE}
+read1_after_duplicationTotal <- read_tsv(file.path(params$read1_after_dir, "Sequence_Duplication_Levels"), 
+                                          n_max=1,
+                                          col_names = c("term", "value")) %>% pull(value)
+```
+Percent of seqs remaining if deduplicated: <strong>`r label_percent(0.01)(read1_after_duplicationTotal/100)`</strong>
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read1_after_duplication <- read_tsv(file.path(params$read1_after_dir, "Sequence_Duplication_Levels"), skip=1) %>%
+    mutate(`Duplication Level` = factor(`Duplication Level`, levels = `Duplication Level`))
+plot_duplication(read1_after_duplication)
+```
+
+#### Overrepresented sequences
+
+```{r include=FALSE, message = FALSE, warning = FALSE}
+read1_after_overrepresentedTest <- file.exists(file.path(params$read1_after_dir, "Overrepresented_sequences"))
+```
+
+```{r echo=FALSE, eval=read1_after_overrepresentedTest, message = FALSE, warning = FALSE}
+read1_after_overrepresentedSeq <- read_tsv(file.path(params$read1_after_dir, "Overrepresented_sequences"))
+knitr::kable(read1_after_overrepresentedSeq)
+```
+
+```{block echo=!read1_after_overrepresentedTest}
+No overrepresented sequences
+```
+
+#### Adapter Cotent
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read1_after_adapter <- read_tsv(file.path(params$read1_after_dir, "Adapter_Content"))
+plot_adapter_content(read1_after_adapter)
+```
+
+## Read2 Result
+
+### Before Trimming
+
+#### Quality
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read2_before_quality <- read_tsv(file.path(params$read2_before_dir, "Per_base_sequence_quality"))
+plot_quality(read2_before_quality)
+```
+
+#### Nucleotides Dirstribution
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read2_before_nt <- read_tsv(file.path(params$read2_before_dir, "Per_base_sequence_content"))
+plot_nt_distribution(read2_before_nt)
+```
+
+#### Sequence Length Distribution
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read2_before_length <- read_tsv(file.path(params$read2_before_dir, "Sequence_Length_Distribution"))
+plot_length(read2_before_length)
+```
+
+#### Sequence Duplication Levels
+
+```{r echo=FALSE, message = FALSE, warning = FALSE}
+read2_before_duplicationTotal <- read_tsv(file.path(params$read2_before_dir, "Sequence_Duplication_Levels"), 
+                                          n_max=1,
+                                          col_names = c("term", "value")) %>% pull(value)
+```
+Percent of seqs remaining if deduplicated: <strong>`r label_percent(0.01)(read2_before_duplicationTotal/100)`</strong>
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read2_before_duplication <- read_tsv(file.path(params$read2_before_dir, "Sequence_Duplication_Levels"), skip=1) %>%
+    mutate(`Duplication Level` = factor(`Duplication Level`, levels = `Duplication Level`))
+plot_duplication(read2_before_duplication)
+```
+
+#### Overrepresented sequences
+
+```{r include=FALSE, message = FALSE, warning = FALSE}
+read2_before_overrepresentedTest <- file.exists(file.path(params$read2_before_dir, "Overrepresented_sequences"))
+```
+
+```{r echo=FALSE, eval=read2_before_overrepresentedTest, message = FALSE, warning = FALSE}
+read2_before_overrepresentedSeq <- read_tsv(file.path(params$read2_before_dir, "Overrepresented_sequences"))
+knitr::kable(read2_before_overrepresentedSeq)
+```
+
+```{block echo=!read2_before_overrepresentedTest}
+No overrepresented sequences
+```
+
+#### Adapter Cotent
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read2_before_adapter <- read_tsv(file.path(params$read2_before_dir, "Adapter_Content"))
+plot_adapter_content(read2_before_adapter)
+```
+
+### After Trimming
+
+#### Quality
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read2_after_quality <- read_tsv(file.path(params$read2_after_dir, "Per_base_sequence_quality"))
+plot_quality(read2_after_quality)
+```
+
+#### Nucleotides Dirstribution
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read2_after_nt <- read_tsv(file.path(params$read2_after_dir, "Per_base_sequence_content"))
+plot_nt_distribution(read2_after_nt)
+```
+
+#### Sequence Length Distribution
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read2_after_length <- read_tsv(file.path(params$read2_after_dir, "Sequence_Length_Distribution"))
+plot_length(read2_after_length)
+```
+
+#### Sequence Duplication Levels
+
+```{r echo=FALSE, message = FALSE, warning = FALSE}
+read2_after_duplicationTotal <- read_tsv(file.path(params$read2_after_dir, "Sequence_Duplication_Levels"), 
+                                          n_max=1,
+                                          col_names = c("term", "value")) %>% pull(value)
+```
+Percent of seqs remaining if deduplicated: <strong>`r label_percent(0.01)(read2_after_duplicationTotal/100)`</strong>
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read2_after_duplication <- read_tsv(file.path(params$read2_after_dir, "Sequence_Duplication_Levels"), skip=1) %>%
+    mutate(`Duplication Level` = factor(`Duplication Level`, levels = `Duplication Level`))
+plot_duplication(read2_after_duplication)
+```
+
+#### Overrepresented sequences
+
+```{r include=FALSE, message = FALSE, warning = FALSE}
+read2_after_overrepresentedTest <- file.exists(file.path(params$read2_after_dir, "Overrepresented_sequences"))
+```
+
+```{r echo=FALSE, eval=read2_after_overrepresentedTest, message = FALSE, warning = FALSE}
+read2_after_overrepresentedSeq <- read_tsv(file.path(params$read2_after_dir, "Overrepresented_sequences"))
+knitr::kable(read2_after_overrepresentedSeq)
+```
+
+```{block echo=!read2_after_overrepresentedTest}
+No overrepresented sequences
+```
+
+#### Adapter Cotent
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+read2_after_adapter <- read_tsv(file.path(params$read2_after_dir, "Adapter_Content"))
+plot_adapter_content(read2_after_adapter)
+```
