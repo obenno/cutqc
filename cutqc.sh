@@ -1,6 +1,20 @@
 #! /usr/bin/env bash
 
-## Usage: Digest_fastqc
+## Usage:
+usage="cutqc.sh in_read1.fq.gz in_read2.fq.gz out_report.html [cutadapt_option]
+
+PLEASE REFER TO CUTADAPT AND FASTQC MANUAL ALSO.
+
+Only pair-end gzipped input files are supported.
+
+The first three arguments are mandatory and positional, all the other options
+followed will be parsed to cutadapt, please refer to cutadapt manual.
+"
+
+if [[ -z $1 || $1 == "-h" || $1 == "-help" ]]; then
+    echo -e "$usage";
+    exit 1;
+fi;
 
 inputR1=$1;
 shift 1;
