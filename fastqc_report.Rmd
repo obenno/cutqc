@@ -14,7 +14,6 @@ params:
   read1_after_dir: ""
   read2_before_dir: ""
   read2_after_dir: ""
-  cutadapt_cmd: ""
 ---
 
 ```{r include=FALSE}
@@ -44,11 +43,13 @@ plot_nt_distribution <- function(d){
             legend.title = element_blank(),
             legend.position = "top"
         ) + scale_color_brewer(palette = "Set1")
-    ggplotly(p) %>% layout(legend = list(x=0.9, y=0.95, title = ""))
+    ggplotly(p) %>%
+    layout(legend = list(orientation = "h", yanchor="bottom", y=1.02, xanchor="right", x=1, title = ""))
 }
 
 plot_length <- function(d){
     p <- ggplot(d, aes(Length, Count))+
+        geom_bar(alpha=0.8, fill="grey", stat="identity") +
         geom_line(alpha=0.8) + theme_bw()+
         theme(
             axis.text.x = element_text(face = "bold", color = "black"),
@@ -75,7 +76,8 @@ plot_duplication <- function(d){
             legend.title = element_blank(),
             legend.position = "top"
         ) + scale_color_brewer(palette = "Set1")
-    ggplotly(p) %>% layout(legend = list(x=0.75, y=0.95, title = ""))
+    ggplotly(p) %>% 
+    layout(legend = list(orientation = "h", yanchor="bottom", y=1.02, xanchor="right", x=1, title = ""))
 }
 
 plot_adapter_content <- function(d){
@@ -89,7 +91,8 @@ plot_adapter_content <- function(d){
             legend.title = element_blank(),
             legend.position = "top"
         ) + scale_color_brewer(palette = "Set1")
-    ggplotly(p) %>% layout(legend = list(x=0.7, y=0.95, title=""))
+    ggplotly(p) %>%
+    layout(legend = list(orientation = "h", yanchor="bottom", y=1.02, xanchor="right", x=1, title=""))
 }
 ```
 
@@ -116,8 +119,8 @@ plot_adapter_content <- function(d){
 <details>
   <summary>Cutadapt Version</summary>
  
- ```{r comment='', echo=FALSE}
- cat(readLines(params$cutadapt_cmd), sep = '\n')
+ ```{bash echo=FALSE}
+ cat cutadapt_command 
  ```
 
 </details>
