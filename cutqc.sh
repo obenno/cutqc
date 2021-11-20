@@ -61,6 +61,6 @@ awk -F"\t" 'BEGIN{OFS="\t"}$1~/^>>/{outFileName=substr($1,3); gsub(" ", "_", out
 awk -F"\t" 'BEGIN{OFS="\t"}$1~/^>>/{outFileName=substr($1,3); gsub(" ", "_", outFileName);}$1!~/^>>/&&NR>1{if($1~/^#/){sub("#","",$1)}; print $0 >> "'$read2_after_dir/'"outFileName}' $fastqc_read2_after/fastqc_data.txt
 
 ## Generate html with Rmd
-Rscript -e 'rmarkdown::render("fastqc_report.Rmd", params=list(read1_before_dir = "'$read1_before_dir'", read1_after_dir="'$read1_after_dir'", read2_before_dir = "'$read2_before_dir'", read2_after_dir = "'$read2_after_dir'"), knit_root_dir=getwd(), output_file="'$outHtml'")'
+Rscript -e 'rmarkdown::render("fastqc_report.Rmd", params=list(read1_before_dir = "'$read1_before_dir'", read1_after_dir="'$read1_after_dir'", read2_before_dir = "'$read2_before_dir'", read2_after_dir = "'$read2_after_dir'"), knit_root_dir=getwd(), output_dir = getwd(), output_file="'$outHtml'")'
 
 rm -rf $read1_before_dir $read1_after_dir $read2_before_dir $read2_after_dir
