@@ -1,0 +1,170 @@
+---
+title: "Fastqc Report"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+toc_depth: 4
+number_sections: true
+theme: lumen
+params:
+  read_fastqc_dir: ""
+---
+
+```{r include=FALSE}
+library(tidyverse)
+library(scales)
+library(plotly)
+
+plot_quality <- function(d){
+    d %>% plot_ly(type="box", 
+                  q1=~`Lower Quartile`, 
+                  median=~Median,
+                  q3=~`Upper Quartile`, 
+                  lowerfence=~`10th Percentile`, 
+                  upperfence=~`90th Percentile`, 
+                  line = list(color="#6060B0"), name="") %>% 
+        add_lines(x=~Base, y=~Mean, line=list(color="#6E6E3C"), name="") %>% 
+        layout(yaxis = list(range = c(0, 40), title="Quality"), showlegend = FALSE)
+}
+
+plot_nt_distribution <- function(d){
+    d <- d %>% pivot_longer(-Base, names_to = "nt", values_to = "percent")
+    p <- ggplot(d, aes(Base, percent, color=nt))+
+        geom_line(alpha=0.8) + ylim(0,100) + theme_bw()+ 
+        theme(
+            axis.text.x = element_text(face = "bold", color = "black"), 
+            panel.grid = element_blank(),
+            legend.title = element_blank(),
+            legend.position = "top"
+        ) + scale_color_brewer(palette = "Set1")
+    ggplotly(p) %>%
+    layout(legend = list(orientation = "h", yanchor="bottom", y=1.02, xanchor="right", x=1, title = ""))
+}
+
+plot_length <- function(d){
+    p <- ggplot(d, aes(Length, Count))+
+        geom_bar(alpha=0.8, fill="grey", stat="identity") +
+        geom_line(alpha=0.8) + theme_bw()+
+        theme(
+            axis.text.x = element_text(face = "bold", color = "black"),
+            panel.grid = element_blank(),
+            legend.title = element_blank(),
+            legend.position = "top"
+        ) + scale_color_brewer(palette = "Set1")
+    ggplotly(p)
+}
+
+plot_duplication <- function(d){
+    d <- d %>%
+        pivot_longer(-`Duplication Level`, names_to = "group", values_to = "percent") ##%>%
+        ##mutate(text=paste0("Duplication Level: ", `Duplication Level`, "<br>", "Percent: ", label_percent(0.01)(percent/100)))
+    p <- ggplot(d, aes(`Duplication Level`, 
+                       percent, 
+                       group=group, 
+                       color=group))+ 
+                       ##text=text))+
+        geom_line(alpha=0.8) + ylim(0,100) + theme_bw()+
+        theme(
+            axis.text.x = element_text(face = "bold", color = "black"),
+            panel.grid = element_blank(),
+            legend.title = element_blank(),
+            legend.position = "top"
+        ) + scale_color_brewer(palette = "Set1")
+    ggplotly(p) %>% 
+    layout(legend = list(orientation = "h", yanchor="bottom", y=1.02, xanchor="right", x=1, title = ""))
+}
+
+plot_adapter_content <- function(d){
+    d <- d %>% pivot_longer(-Position, names_to = "Adapter", values_to = "percent")
+    p <- ggplot(d, aes(Position, percent, color=Adapter))+
+        geom_line(alpha=0.8) + ylim(0,100) + 
+        theme_bw()+
+        theme(
+            axis.text.x = element_text(face = "bold", color = "black"),
+            panel.grid = element_blank(),
+            legend.title = element_blank(),
+            legend.position = "top"
+        ) + scale_color_brewer(palette = "Set1")
+    ggplotly(p) %>%
+    layout(legend = list(orientation = "h", yanchor="bottom", y=1.02, xanchor="right", x=1, title=""))
+}
+```
+
+## Tools Info
+
+<details>
+  <summary>FastQC Version</summary>
+  
+  ```{bash, echo=FALSE}
+  fastqc --version
+  ```
+
+</details> 
+
+## Statistics
+
+```{r echo=FALSE, message = FALSE, warning = FALSE}
+stats <- read_tsv(file.path(params$read_fastqc_dir, "Basic_Statistics"))
+knitr::kable(stats)
+```
+
+## Quality
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+quality_data <- read_tsv(file.path(params$read_fastqc_dir, "Per_base_sequence_quality"))
+plot_quality(quality_data)
+```
+
+## Nucleotides Dirstribution
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+nt_data <- read_tsv(file.path(params$read_fastqc_dir, "Per_base_sequence_content"))
+plot_nt_distribution(nt_data)
+```
+
+## Sequence Length Distribution
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+length_data <- read_tsv(file.path(params$read_fastqc_dir, "Sequence_Length_Distribution"))
+plot_length(length_data)
+```
+
+## Sequence Duplication Levels
+
+```{r echo=FALSE, message = FALSE, warning = FALSE}
+duplicationTotal <- read_tsv(file.path(params$read_fastqc_dir, "Sequence_Duplication_Levels"), 
+                             n_max=1,
+                             col_names = c("term", "value")) %>% pull(value)
+```
+Percent of seqs remaining if deduplicated: <strong>`r label_percent(0.01)(duplicationTotal/100)`</strong>
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+duplication_data <- read_tsv(file.path(params$read_fastqc_dir, "Sequence_Duplication_Levels"), skip=1) %>%
+    mutate(`Duplication Level` = factor(`Duplication Level`, levels = `Duplication Level`))
+plot_duplication(duplication_data)
+```
+
+## Overrepresented sequences
+
+```{r include=FALSE, message = FALSE, warning = FALSE}
+overrepresentedTest <- file.exists(file.path(params$read_fastqc_dir, "Overrepresented_sequences"))
+```
+
+```{r echo=FALSE, eval=overrepresentedTest, message = FALSE, warning = FALSE}
+overrepresentedSeq <- read_tsv(file.path(params$read_fastqc_dir, "Overrepresented_sequences"))
+knitr::kable(overrepresentedSeq)
+```
+
+```{block echo=!overrepresentedTest}
+No overrepresented sequences
+```
+
+## Adapter Cotent
+
+```{r echo=FALSE, out.width="100%", message = FALSE, warning = FALSE}
+adapter_data <- read_tsv(file.path(params$read_fastqc_dir, "Adapter_Content"))
+plot_adapter_content(adapter_data)
+```
