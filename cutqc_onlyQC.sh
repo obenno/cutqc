@@ -34,6 +34,6 @@ read_tmp_dir=$(mktemp -d -p ./ fastqc_read1_before.XXXXXXXXXX)
 awk -F"\t" 'BEGIN{OFS="\t"}$1~/^>>/{outFileName=substr($1,3); gsub(" ", "_", outFileName);}$1!~/^>>/&&NR>1{if($1~/^#/){sub("#","",$1)}; print $0 >> "'$read_tmp_dir/'"outFileName}' $fastqc_out/fastqc_data.txt
 
 ## Generate html with Rmd
-Rscript -e 'rmarkdown::render("fastqc_single_report.Rmd", params=list(read_fastqc_dir = "'$read_tmp_dir'"), knit_root_dir=getwd(), output_dir = getwd(), output_file="'$outHtml'")'
+Rscript -e 'rmarkdown::render("fastqc_single_report.Rmd", params=list(read_fastqc_dir = "'$read_tmp_dir'"), intermediates_dir=getwd(), knit_root_dir=getwd(), output_dir = getwd(), output_file="'$outHtml'")'
 
 rm -rf $read_tmp_dir
