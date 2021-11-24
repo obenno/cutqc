@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 
 ## Usage:
-usage="cutqc_onlyQC.sh in_read.fq.gz out_report.html
+usage="cutqc_onlyQC.sh in_read.fq.gz [out_report.html]
 
 PLEASE REFER TO FASTQC MANUAL ALSO.
 
@@ -21,6 +21,11 @@ inputRead=$1;
 shift 1;
 outHtml=$1;
 shift 1;
+
+if [[ -z $outHtml ]]
+then
+    outHtml=${inputRead%%.f*q.gz}".fastqc_report.html"
+fi
 
 read_fileName=$(basename $inputRead)
 ## conduct fastqc for origin reads
