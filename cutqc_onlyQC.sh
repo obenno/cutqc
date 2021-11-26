@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-set -euo pipefail 
+set -eo pipefail
 
 ## Usage:
 usage="cutqc_onlyQC.sh in_read.fq.gz [out_report.html]
