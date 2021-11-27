@@ -117,7 +117,7 @@ plot_adapter_content <- function(d){
 </details>
 
 <details>
-  <summary>Cutadapt Version</summary>
+  <summary>Cutadapt Command</summary>
  
  ```{bash echo=FALSE}
  cat cutadapt_command 
