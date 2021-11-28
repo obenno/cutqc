@@ -15,7 +15,7 @@ followed will be parsed to cutadapt, please refer to cutadapt manual.
 
 if [[ -z $1 || $1 == "-h" || $1 == "-help" ]]; then
     echo -e "$usage";
-    exit 1;
+    exit 0;
 fi;
 
 inputR1=$1;
