@@ -21,12 +21,13 @@ fi;
 
 inputRead=$1;
 shift 1;
-outHtml=$1;
-shift 1;
 
-if [[ -z $outHtml ]]
+if [[ -z $1 ]]
 then
     outHtml=${inputRead%%.f*q.gz}".fastqc_report.html"
+else
+    outHtml=$1;
+    shift 1;
 fi
 
 read_fileName=$(basename $inputRead)
