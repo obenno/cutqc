@@ -1,4 +1,7 @@
-[![Anaconda-Server Badge](https://anaconda.org/bioconda/cutqc/badges/installer/conda.svg)](https://conda.anaconda.org/bioconda)
+# Cutqc
+
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/cutqc/README.html)
+[![](https://img.shields.io/conda/dn/bioconda/cutqc.svg?style=flat)](https://anaconda.org/bioconda/cutqc)
 
 `cutqc.sh` is a wrapper to perform cutadapt and fastqc, and generate
 an aggregated report for pair-end reads, empowered by rmarkdown and plotly.
