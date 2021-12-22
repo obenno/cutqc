@@ -30,3 +30,7 @@ Please note only gzipped input file(s) are supported.
 ```
 conda install -c bioconda cutqc
 ```
+
+## Cutqc Report
+
+![](/images/cutqc_report.gif)
