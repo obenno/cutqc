@@ -17,7 +17,8 @@ cutqc has two valid subcommands:
         Take pair-end inputs (R1.fq.gz and R2.fq.gz) and perform cutadapt in pair-end mode.
         Fastqc will be performed both before and after trimming. The first three arguments
         are mandatory and positional, all the following options will be parsed to cutadapt,
-        please refer to cutadapt manual for full option list.
+        please refer to cutadapt manual for full option list. Please also don't pass -o and
+        -p argument to cutadapt.
 
     qc_only:
         Take one single fastq file as input and perfom fastqc only.
